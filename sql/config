@@ -1,0 +1,1 @@
+DB="file:database.sqlite3?_loc=auto&_foreign_keys=1"

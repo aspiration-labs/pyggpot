@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package pyggpot.pot;
+
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "pot_service";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    info: {
+        title: "Pot API";
+        version: "1.0";
+    };
+    external_docs: {
+        url: "https://github.com/aspiration-labs/pyggpot";
+        description: "Aspiration Pyggpot (Piggy Bank)";
+    }
+    schemes: HTTP;
+};
+
+//
+// RPC spec
+//
+
+service Pot {
+    rpc CreatePot(CreatePotRequest) returns (PotResponse);
+    rpc ViewPot(ViewPotRequest) returns (PotResponse);
+    rpc ViewPotByName(ViewPotByNameRequest) returns (PotResponse);
+    rpc ListPots(ListPotsRequest) returns (PotListResponse);
+}
+
+// CreatePotRequest
+message CreatePotRequest {
+    string pot_name = 1 [
+        (validator.field) = {
+            regex: "^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]{2,15})*$"
+            human_error: "Must be 3 to 20 characters.  Can contain only alphanumeric characters, dot and underscore."
+        }
+    ]; // required
+    int32 max_coins = 2 [(validator.field) = {int_gt:5}];
+}
+
+// ViewPotRequest
+message ViewPotRequest {
+    int32 pot_id = 1 [(validator.field) = {int_gt: 0}];
+}
+
+// ViewPotRequest
+message ViewPotByNameRequest {
+    string pot_name = 1;
+}
+
+// ListPotsRequest
+message ListPotsRequest {
+    int32 page = 1 [(validator.field) = {int_gt:0}]; // required
+    int32 limit = 2 [(validator.field) = {int_gt: 0, int_lt: 101}]; // default 25
+}
+
+// PotResponse
+message PotResponse {
+    int32 pot_id = 1;
+    string pot_name = 2;
+    int32 max_coins = 3;
+    google.protobuf.Timestamp create_time = 4;
+}
+
+// PotListResponse
+message PotListResponse {
+    int32 total_pot_count = 1;
+    ListPotsRequest request = 2;
+    repeated PotResponse pots = 3;
+}

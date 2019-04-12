@@ -1,0 +1,18 @@
+#
+# files
+#
+
+*.xo.go
+*~
+\#*\#
+database.sqlite3
+
+#
+# dirs
+#
+
+.idea
+rpc/proto
+swaggerui-statik
+swaggerui/proto/
+vendor

@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package pyggpot.coin;
+
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+option go_package = "coin_service";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    info: {
+        title: "Aspiration Pyggpot API";
+        version: "1.0";
+    };
+    external_docs: {
+        url: "https://github.com/aspiration-labs/pyggpot";
+        description: "Aspiration Pyggpot (Piggy Bank)";
+    }
+    schemes: HTTP;
+};
+
+//
+// RPC spec
+//
+
+service Coin {
+    rpc AddCoins(AddCoinsRequest) returns (CoinsListResponse);
+    rpc RemoveCoins(RemoveCoinsRequest) returns (CoinsListResponse);
+}
+
+//
+// Request schema
+//
+message Coins {
+    enum Kind {
+        LEAD = 0;
+        GOLD = 100;
+        SILVER = 10;
+        BRONZE = 1;
+    }
+    Kind kind = 1; // required
+    int32 count = 2 [(validator.field) = {int_gt: 0}];
+}
+
+message AddCoinsRequest {
+    int32 pot_id = 1 [(validator.field) = {int_gt: 0}]; // required
+    repeated Coins coins = 2;
+}
+
+message RemoveCoinsRequest {
+    int32 pot_id = 1 [(validator.field) = {int_gt: 0}]; // required
+    int32 count = 2 [(validator.field) = {int_gt: 0, int_lt: 11}];
+}
+
+//
+// Response schema
+//
+message CoinsListResponse {
+    repeated Coins coins = 1;
+}
