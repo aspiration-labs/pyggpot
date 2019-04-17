@@ -5,6 +5,7 @@
 *.xo.go
 *~
 \#*\#
+.\#*
 database.sqlite3
 
 #
