@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/aspiration-labs/pyggpot/internal/models"
-	"github.com/aspiration-labs/pyggpot/rpc/proto/pot"
+	"github.com/aspiration-labs/pyggpot/rpc/go/pot"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/twitchtv/twirp"
 	"github.com/xo/xoutil"

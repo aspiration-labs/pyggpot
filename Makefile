@@ -1,58 +1,82 @@
-SHELL := /bin/bash
-export GOPATH := ${HOME}/go12
 .PHONY: resetdb models
 
+include build/makefiles/shellvars.mk
+include build/makefiles/osvars.mk
+
+all: services models
+
+clean: clean_services clean_models
+
 #
-# Protobuf based service builds. Update SERVICES with changes
+# Services: protobuf based service builds. Typically just add to SERVICES var.
 #
 
 SERVICES := coin pot
 
-SWAGGER_JSON_FILES := $(SERVICES:%=swaggerui/proto/%/service.swagger.json)
-PROTOBUF_PB_FILES := $(SERVICES:%=rpc/proto/%/service.pb.go)
-PROTOBUF_TWIRP_FILES := $(SERVICES:%=rpc/proto/%/service.twirp.go)
-PROTOBUF_VALIDATOR_FILES := $(SERVICES:%=rpc/proto/%/service.validator.pb.go)
+PROTOBUF_PB_FILES := $(SERVICES:%=rpc/go/%/service.pb.go)
+PROTOBUF_TWIRP_FILES := $(SERVICES:%=rpc/go/%/service.twirp.go)
+PROTOBUF_VALIDATOR_FILES := $(SERVICES:%=rpc/go/%/service.validator.pb.go)
+PROTOBUF_PYTHON_FILES := $(SERVICES:%=rpc/python/%/service_pb2.py)
+PROTOBUF_PYTHON_TWIRP_FILES := $(SERVICES:%=rpc/python/%/service_pb2_twirp.py)
+PROTOBUF_JS_FILES := $(SERVICES:%=rpc/js/%/service_pb.js)
+PROTOBUF_JS_TWIRP_FILES := $(SERVICES:%=rpc/js/%/service_pb_twirp.js)
+SWAGGER_JSON_FILES := $(SERVICES:%=swaggerui/rpc/%/service.swagger.json)
+PROTOBUF_ALL_FILES := $(PROTOBUF_PB_FILES) $(PROTOBUF_TWIRP_FILES) $(PROTOBUF_VALIDATOR_FILES) \
+                      $(PROTOBUF_PYTHON_FILES) $(PROTOBUF_PYTHON_TWIRP_FILES) \
+                      $(PROTOBUF_JS_FILES) $(PROTOBUF_JS_TWIRP_FILES) \
+                      $(SWAGGER_JSON_FILES)
+STATIK = $(_TOOLS_BIN)/statik
 
-rpc/proto/%/service.twirp.go \
-rpc/proto/%/service.pb.go \
-rpc/proto/%/service.validator.pb.go \
-swaggerui/proto/%/service.swagger.json: proto/%/service.proto
-	protoc \
-            -I vendor/github.com/grpc-ecosystem/grpc-gateway/ \
-            -I vendor/ \
-            --proto_path=. \
-            --twirp_out=./rpc \
-            --go_out=./rpc \
-            --govalidators_out=./rpc \
-            --twirp_swagger_out=./swaggerui \
+# Everything we build from a proto def
+rpc/go/%/service.twirp.go \
+rpc/go/%/service.pb.go \
+rpc/go/%/service.validator.pb.go \
+rpc/python/%/service_pb2.py \
+rpc/python/%/service_pb2_twirp.py \
+rpc/js/%/service_pb.js \
+rpc/js/%/service_pb_twirp.js \
+swaggerui/rpc/%/service.swagger.json \
+  : proto/%/service.proto
+	PATH="$(_TOOLS_BIN):$$PATH" $(PROTOC) \
+            --proto_path=./proto \
+            --proto_path=./vendor \
+            --proto_path=./vendor/github.com/grpc-ecosystem/grpc-gateway \
+            --twirp_out=./rpc/go \
+            --go_out=./rpc/go \
+            --govalidators_out=./rpc/go \
+            --python_out=./rpc/python \
+            --twirp_python_out=./rpc/python \
+            --js_out=import_style=commonjs,binary:./rpc/js \
+            --twirp_js_out=import_style=commonjs,binary:./rpc/js \
+            --twirp_swagger_out=./swaggerui/rpc \
             $<
-
-all: services models
 
 services: proto swagger
 
-proto: $(PROTOBUF_PB_FILES) $(PROTOBUF_TWIRP_FILES) $(PROTOBUF_VALIDATOR_FILES)
+proto: $(PROTOBUF_ALL_FILES)
 
-$(PROTOBUF_PB_FILES) $(PROTOBUF_TWIRP_FILES) $(PROTOBUF_VALIDATOR_FILES): rpc
+$(PROTOBUF_PB_FILES) $(PROTOBUF_TWIRP_FILES) $(PROTOBUF_VALIDATOR_FILES): rpc/go rpc/python rpc/js swaggerui/rpc
 
-rpc:
-	mkdir -v $@
+rpc/go rpc/python rpc/js swaggerui/rpc:
+	mkdir -v -p $@
 
 swagger: swaggerui-statik/statik/statik.go
 
 swaggerui-statik/statik/statik.go: swaggerui/index.html $(SWAGGER_JSON_FILES)
-	statik -src=swaggerui -dest=swaggerui-statik
+	$(STATIK) -src=swaggerui -dest=swaggerui-statik
 
-clean: $(PROTOBUF_PB_FILES) $(PROTOBUF_TWIRP_FILES) $(PROTOBUF_VALIDATOR_FILES) $(SWAGGER_JSON_FILES)
-	rm -v $^
-	rm -vf internal/models/*.xo.go
+clean_services:
+	rm -vf $(PROTOBUF_ALL_FILES)
+	rm -rf rpc swaggerui/rpc
+
 
 #
-# Database and models
+# Models: xo generated from working schema and query defs
 #
 
 MODEL_PATH := internal/models
 TEMPLATE_PATH := sql/templates
+XO = $(_TOOLS_BIN)/xo
 
 resetdb:
 	rm -vf database.sqlite3
@@ -63,10 +87,72 @@ database.sqlite3:
 
 models:
 	mkdir -v -p internal/models
-	source sql/config && xo $$DB --int32-type int32 -o $(MODEL_PATH) --template-path $(TEMPLATE_PATH)
-	source sql/config && xo $$DB --int32-type int32 -o $(MODEL_PATH) --query-mode --query-type PotsPaged --query-trim < sql/pots_paged.query.sql
-	source sql/config && xo $$DB --int32-type int32 -o $(MODEL_PATH) --query-mode --query-type CoinsInPot --query-trim < sql/coins_in_pot.query.sql
+	source sql/config && $(XO) $$DB --int32-type int32 -o $(MODEL_PATH) --template-path $(TEMPLATE_PATH)
+	source sql/config && $(XO) $$DB --int32-type int32 -o $(MODEL_PATH) --query-mode --query-type PotsPaged --query-trim < sql/pots_paged.query.sql
+	source sql/config && $(XO) $$DB --int32-type int32 -o $(MODEL_PATH) --query-mode --query-type CoinsInPot --query-trim < sql/coins_in_pot.query.sql
 
-setup:
+clean_models:
+	rm -vf internal/models/*.xo.go
+
+
+#
+# Setup: protoc+plugins, other tools
+#
+# Note that go mod vendor will bring down *versioned* tools base on go.mod. Yay.
+# We use depends/*.go to trick go mod into getting our tools for local builds.
+#
+
+# protoc
+PROTOC_VERSION := 3.7.1
+PROTOC_RELEASES_PATH := https://github.com/protocolbuffers/protobuf/releases/download
+PROTOC_ZIP := protoc-$(PROTOC_VERSION)-$(PROTOC_PLATFORM).zip
+PROTOC_DOWNLOAD := $(PROTOC_RELEASES_PATH)/v$(PROTOC_VERSION)/$(PROTOC_ZIP)
+_TOOLS_DIR := ./_tools
+_TOOLS_BIN := $(_TOOLS_DIR)/bin
+PROTOC := $(_TOOLS_BIN)/protoc
+
+$(_TOOLS_BIN)/%:
+	cd $< && GOBIN=$(PWD)/$(_TOOLS_BIN) go install
+
+setup: setup_vendor $(_TOOLS_DIR) setup_protoc setup_tools
 	go get github.com/xo/usql
+
+# vendor
+setup_vendor:
 	go mod vendor
+
+$(_TOOLS_DIR):
+	mkdir -v -p $@
+
+# protoc
+setup_protoc: $(PROTOC) \
+              $(_TOOLS_BIN)/protoc-gen-go \
+              $(_TOOLS_BIN)/protoc-gen-twirp \
+              $(_TOOLS_BIN)/protoc-gen-twirp_python \
+              $(_TOOLS_BIN)/protoc-gen-govalidators \
+              $(_TOOLS_BIN)/protoc-gen-twirp_swagger \
+              $(_TOOLS_BIN)/protoc-gen-twirp_js \
+              $(_TOOLS_BIN)/statik
+
+$(PROTOC):
+	cd $(_TOOLS_DIR) && curl --location $(PROTOC_DOWNLOAD) | tar xvf -
+
+$(_TOOLS_BIN)/protoc-gen-go: vendor/github.com/golang/protobuf/protoc-gen-go
+$(_TOOLS_BIN)/protoc-gen-twirp: vendor/github.com/twitchtv/twirp/protoc-gen-twirp
+$(_TOOLS_BIN)/protoc-gen-twirp_python: vendor/github.com/twitchtv/twirp/protoc-gen-twirp_python
+$(_TOOLS_BIN)/protoc-gen-govalidators: vendor/github.com/mwitkow/go-proto-validators/protoc-gen-govalidators
+$(_TOOLS_BIN)/protoc-gen-twirp_swagger: vendor/github.com/elliots/protoc-gen-twirp_swagger
+$(_TOOLS_BIN)/protoc-gen-twirp_js: vendor/github.com/thechriswalker/protoc-gen-twirp_js
+$(_TOOLS_BIN)/statik: vendor/github.com/rakyll/statik
+
+# tools
+setup_tools: $(_TOOLS_BIN)/usql $(_TOOLS_BIN)/xo
+
+$(_TOOLS_BIN)/usql: vendor/github.com/xo/usql
+$(_TOOLS_BIN)/xo: vendor/github.com/xo/xo
+
+clean_setup:
+	rm -rf $(_TOOLS_DIR)
+
+clean_vendor:
+	rm -rf vendor

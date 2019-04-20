@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/aspiration-labs/pyggpot/internal/models"
-	"github.com/aspiration-labs/pyggpot/rpc/proto/coin"
+	"github.com/aspiration-labs/pyggpot/rpc/go/coin"
 	"github.com/twitchtv/twirp"
 )
 

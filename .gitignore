@@ -13,7 +13,8 @@ database.sqlite3
 #
 
 .idea
-rpc/proto
+_tools
+rpc
 swaggerui-statik
-swaggerui/proto/
+swaggerui/rpc
 vendor

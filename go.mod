@@ -10,8 +10,10 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.8.5
 	github.com/mwitkow/go-proto-validators v0.0.0-20190212092829-1f388280e944
 	github.com/rakyll/statik v0.1.6
+	github.com/thechriswalker/protoc-gen-twirp_js v0.0.0-20181203160339-80b3a163595d
 	github.com/twitchtv/twirp v5.6.0+incompatible
 	github.com/xo/dburl v0.0.0-20190203050942-98997a05b24f
-	github.com/xo/usql v0.7.3 // indirect
+	github.com/xo/usql v0.7.3
+	github.com/xo/xo v0.0.0-20190105221319-1a94fa516029
 	github.com/xo/xoutil v0.0.0-20171112033149-46189f4026a5
 )

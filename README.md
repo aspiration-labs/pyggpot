@@ -4,15 +4,14 @@ In case you're wondering: [Pyggpot](https://bahoukas.com/pygg-pots-to-piggy-bank
 ## Prereqs
 
 - A [go modules](https://blog.golang.org/modules2019) compatible version of Golang, i.e., 1.11 or later.
-- A recent `protoc` protocol buffer compiler. Releases [here](https://github.com/protocolbuffers/protobuf/releases).
 
 ## Installation
 
 - Clone repo
 ```$bash
-git clone git@github.com:aspiration-labs/twirp.git
+git clone git@github.com:aspiration-labs/pyggpot.git
 ```
-- Install modules and supporting progs
+- Install modules and vendored tools
 ```$bash
 make setup
 ```
