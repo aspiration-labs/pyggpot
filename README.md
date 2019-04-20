@@ -15,9 +15,9 @@ git clone git@github.com:aspiration-labs/pyggpot.git
 ```$bash
 make setup
 ```
-- Create empty sqlite database
+- Create sqlite database
 ```$bash
-make resetdb
+make db
 ```
 - Generate proto and model code
 ```$bash

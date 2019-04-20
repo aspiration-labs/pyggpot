@@ -6,6 +6,7 @@ include build/makefiles/osvars.mk
 all: services models
 
 clean: clean_services clean_models
+distclean: clean_services clean_models clean_db clean_setup clean_vendor
 
 #
 # Services: protobuf based service builds. Typically just add to SERVICES var.
@@ -63,7 +64,7 @@ rpc/go rpc/python rpc/js swaggerui/rpc:
 swagger: swaggerui-statik/statik/statik.go
 
 swaggerui-statik/statik/statik.go: swaggerui/index.html $(SWAGGER_JSON_FILES)
-	$(STATIK) -src=swaggerui -dest=swaggerui-statik
+	$(STATIK) -f -src=swaggerui -dest=swaggerui-statik
 
 clean_services:
 	rm -vf $(PROTOBUF_ALL_FILES)
@@ -77,13 +78,12 @@ clean_services:
 MODEL_PATH := internal/models
 TEMPLATE_PATH := sql/templates
 XO = $(_TOOLS_BIN)/xo
+USQL = $(_TOOLS_BIN)/usql
 
-resetdb:
-	rm -vf database.sqlite3
-	$(MAKE) database.sqlite3
+db: database.sqlite3
 
 database.sqlite3:
-	source sql/config && usql $$DB -f sql/schema.sqlite3.sql
+	source sql/config && $(USQL) $$DB -f sql/schema.sqlite3.sql
 
 models:
 	mkdir -v -p internal/models
@@ -91,8 +91,14 @@ models:
 	source sql/config && $(XO) $$DB --int32-type int32 -o $(MODEL_PATH) --query-mode --query-type PotsPaged --query-trim < sql/pots_paged.query.sql
 	source sql/config && $(XO) $$DB --int32-type int32 -o $(MODEL_PATH) --query-mode --query-type CoinsInPot --query-trim < sql/coins_in_pot.query.sql
 
+resetdb: clean_db clean_models db
+
 clean_models:
 	rm -vf internal/models/*.xo.go
+
+clean_db:
+	rm -vf database.sqlite3
+
 
 
 #
@@ -115,7 +121,6 @@ $(_TOOLS_BIN)/%:
 	cd $< && GOBIN=$(PWD)/$(_TOOLS_BIN) go install
 
 setup: setup_vendor $(_TOOLS_DIR) setup_protoc setup_tools
-	go get github.com/xo/usql
 
 # vendor
 setup_vendor:
@@ -134,8 +139,11 @@ setup_protoc: $(PROTOC) \
               $(_TOOLS_BIN)/protoc-gen-twirp_js \
               $(_TOOLS_BIN)/statik
 
-$(PROTOC):
-	cd $(_TOOLS_DIR) && curl --location $(PROTOC_DOWNLOAD) | tar xvf -
+$(PROTOC): $(_TOOLS_DIR)/$(PROTOC_ZIP)
+	unzip -o -d $(_TOOLS_DIR) $< && touch $@  # avoid Prerequisite is newer than target `_tools/bin/protoc'.
+
+$(_TOOLS_DIR)/$(PROTOC_ZIP):
+	curl --location $(PROTOC_DOWNLOAD) --output $@
 
 $(_TOOLS_BIN)/protoc-gen-go: vendor/github.com/golang/protobuf/protoc-gen-go
 $(_TOOLS_BIN)/protoc-gen-twirp: vendor/github.com/twitchtv/twirp/protoc-gen-twirp
