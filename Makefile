@@ -77,7 +77,7 @@ clean_services:
 
 MODEL_PATH := internal/models
 TEMPLATE_PATH := sql/templates
-XO = $(_TOOLS_BIN)/xo
+XO = PATH="$(_TOOLS_BIN):$$PATH" $(_TOOLS_BIN)/xo
 USQL = $(_TOOLS_BIN)/usql
 
 db: database.sqlite3
@@ -137,7 +137,8 @@ setup_protoc: $(PROTOC) \
               $(_TOOLS_BIN)/protoc-gen-govalidators \
               $(_TOOLS_BIN)/protoc-gen-twirp_swagger \
               $(_TOOLS_BIN)/protoc-gen-twirp_js \
-              $(_TOOLS_BIN)/statik
+              $(_TOOLS_BIN)/statik \
+              $(_TOOLS_BIN)/goimports
 
 $(PROTOC): $(_TOOLS_DIR)/$(PROTOC_ZIP)
 	unzip -o -d $(_TOOLS_DIR) $< && touch $@  # avoid Prerequisite is newer than target `_tools/bin/protoc'.
@@ -152,6 +153,7 @@ $(_TOOLS_BIN)/protoc-gen-govalidators: vendor/github.com/mwitkow/go-proto-valida
 $(_TOOLS_BIN)/protoc-gen-twirp_swagger: vendor/github.com/elliots/protoc-gen-twirp_swagger
 $(_TOOLS_BIN)/protoc-gen-twirp_js: vendor/github.com/thechriswalker/protoc-gen-twirp_js
 $(_TOOLS_BIN)/statik: vendor/github.com/rakyll/statik
+$(_TOOLS_BIN)/goimports: vendor/golang.org/x/tools/cmd/goimports
 
 # tools
 setup_tools: $(_TOOLS_BIN)/usql $(_TOOLS_BIN)/xo

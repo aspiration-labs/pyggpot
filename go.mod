@@ -15,4 +15,5 @@ require (
 	github.com/xo/usql v0.7.3
 	github.com/xo/xo v0.0.0-20190105221319-1a94fa516029
 	github.com/xo/xoutil v0.0.0-20171112033149-46189f4026a5
+	golang.org/x/tools v0.0.0-20190312170243-e65039ee4138
 )
