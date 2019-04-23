@@ -35,8 +35,8 @@ service Pot {
 message CreatePotRequest {
     string pot_name = 1 [
         (validator.field) = {
-            regex: "^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]{2,15})*$"
-            human_error: "Must be 3 to 20 characters.  Can contain only alphanumeric characters, dot and underscore."
+            regex: "^[A-Za-z0-9]{2}(?:[ _-]?[A-Za-z0-9])+$"
+            human_error: "Can contain only alphanumeric characters, dot and underscore."
         }
     ]; // required
     int32 max_coins = 2 [(validator.field) = {int_gt:5}];
