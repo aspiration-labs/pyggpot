@@ -145,7 +145,7 @@ $(TOOLS_DIR):
 
 # protoc
 $(PROTOC): $(TOOLS_DIR)/$(PROTOC_ZIP)
-	unzip -o -d $(TOOLS_DIR) $< && touch $@  # avoid Prerequisite is newer than target `tools/bin/protoc'.
+	unzip -o -d "$(TOOLS_DIR)" $< && touch $@  # avoid Prerequisite is newer than target `tools/bin/protoc'.
 
 $(TOOLS_DIR)/$(PROTOC_ZIP):
 	curl --location $(PROTOC_DOWNLOAD) --output $@
@@ -157,11 +157,11 @@ GO_TOOLS_VENDOR := $(addprefix vendor/, $(GO_TOOLS))
 setup_tools: $(GO_TOOLS_BIN)
 
 $(GO_TOOLS_BIN): $(GO_TOOLS_VENDOR)
-	GOBIN=$(PWD)/$(TOOLS_BIN) go install -mod=vendor $(GO_TOOLS)
+	GOBIN="$(PWD)/$(TOOLS_BIN)" go install -mod=vendor $(GO_TOOLS)
 
 # clean
 clean_setup:
-	rm -rf $(TOOLS_DIR)
+	rm -rf "$(TOOLS_DIR)"
 
 clean_vendor:
 	rm -rf vendor
