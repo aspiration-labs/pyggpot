@@ -33,10 +33,10 @@ service Coin {
 //
 message Coins {
     enum Kind {
-        LEAD = 0;
-        GOLD = 100;
-        SILVER = 10;
+        UNKNOWN = 0;
         BRONZE = 1;
+        SILVER = 10;
+        GOLD = 100;
     }
     Kind kind = 1; // required
     int32 count = 2 [(validator.field) = {int_gt: 0}];
@@ -49,7 +49,7 @@ message AddCoinsRequest {
 
 message RemoveCoinsRequest {
     int32 pot_id = 1 [(validator.field) = {int_gt: 0}]; // required
-    int32 count = 2 [(validator.field) = {int_gt: 0, int_lt: 11}];
+    int32 count = 2 [(validator.field) = {int_gt: 0}];
 }
 
 //
