@@ -5,7 +5,7 @@ package pyggpot.coin;
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "protoc-gen-swagger/options/annotations.proto";
 
-option go_package = "coin_service";
+option go_package = "github.com/aspiration-labs/pyggpot/coin_service;coin_service";
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {

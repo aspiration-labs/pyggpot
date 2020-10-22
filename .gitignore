@@ -18,3 +18,4 @@ rpc
 swaggerui-statik
 swaggerui/rpc
 vendor
+.go_tools.mk

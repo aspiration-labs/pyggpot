@@ -3,10 +3,13 @@
 include build/makefiles/shellvars.mk
 include build/makefiles/osvars.mk
 
-all: services models
+all: models services
+setup:
+	make -C tools_module
 
 clean: clean_services clean_models
-distclean: clean_services clean_models clean_db clean_setup clean_vendor
+distclean: clean_services clean_models clean_db
+	make -C tools_module clean
 
 #
 # Services: protobuf based service builds. Typically just add to SERVICES var.
@@ -14,6 +17,8 @@ distclean: clean_services clean_models clean_db clean_setup clean_vendor
 
 SERVICES := coin pot
 
+TOOLS_BIN_DIR := tools_module/tools/bin
+PROTOC := $(TOOLS_BIN_DIR)/protoc
 PROTOBUF_PB_FILES := $(SERVICES:%=rpc/go/%/service.pb.go)
 PROTOBUF_TWIRP_FILES := $(SERVICES:%=rpc/go/%/service.twirp.go)
 PROTOBUF_VALIDATOR_FILES := $(SERVICES:%=rpc/go/%/service.validator.pb.go)
@@ -26,7 +31,7 @@ PROTOBUF_ALL_FILES := $(PROTOBUF_PB_FILES) $(PROTOBUF_TWIRP_FILES) $(PROTOBUF_VA
                       $(PROTOBUF_PYTHON_FILES) $(PROTOBUF_PYTHON_TWIRP_FILES) \
                       $(PROTOBUF_JS_FILES) $(PROTOBUF_JS_TWIRP_FILES) \
                       $(SWAGGER_JSON_FILES)
-STATIK = $(TOOLS_BIN)/statik
+STATIK = $(TOOLS_BIN_DIR)/statik
 
 # Everything we build from a proto def
 rpc/go/%/service.twirp.go \
@@ -38,10 +43,10 @@ rpc/js/%/service_pb.js \
 rpc/js/%/service_pb_twirp.js \
 swaggerui/rpc/%/service.swagger.json \
   : proto/%/service.proto
-	PATH="$(TOOLS_BIN):$$PATH" $(PROTOC) \
+	PATH="$(TOOLS_BIN_DIR):$$PATH" $(PROTOC) \
             --proto_path=./proto \
-            --proto_path=./vendor \
-            --proto_path=./vendor/github.com/grpc-ecosystem/grpc-gateway \
+            --proto_path=./tools_module/vendor \
+            --proto_path=./tools_module/vendor/github.com/grpc-ecosystem/grpc-gateway \
             --twirp_out=./rpc/go \
             --go_out=./rpc/go \
             --govalidators_out=./rpc/go \
@@ -77,8 +82,8 @@ clean_services:
 
 MODEL_PATH := internal/models
 TEMPLATE_PATH := sql/templates
-XO = PATH="$(TOOLS_BIN):$$PATH" $(TOOLS_BIN)/xo
-USQL = $(TOOLS_BIN)/usql
+XO = PATH="$(TOOLS_BIN_DIR):$$PATH" $(TOOLS_BIN_DIR)/xo
+USQL = $(TOOLS_BIN_DIR)/usql
 
 db: database.sqlite3
 
@@ -100,68 +105,3 @@ clean_db:
 	rm -vf database.sqlite3
 
 
-
-#
-# Setup: protoc+plugins, other tools
-#
-# Note that go mod vendor will bring down *versioned* tools base on go.mod. Yay.
-# We use tools.go to trick go mod into getting our tools for local builds.
-# See the following for inspiration:
-#   https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
-#   https://github.com/golang/go/issues/25922
-#   https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
-#   
-
-TOOLS_DIR := ./tools
-TOOLS_BIN := $(TOOLS_DIR)/bin
-
-# protoc
-PROTOC_VERSION := 3.7.1
-PROTOC_RELEASES_PATH := https://github.com/protocolbuffers/protobuf/releases/download
-PROTOC_ZIP := protoc-$(PROTOC_VERSION)-$(PROTOC_PLATFORM).zip
-PROTOC_DOWNLOAD := $(PROTOC_RELEASES_PATH)/v$(PROTOC_VERSION)/$(PROTOC_ZIP)
-PROTOC := $(TOOLS_BIN)/protoc
-
-# go installed tools.go
-GO_TOOLS := github.com/golang/protobuf/protoc-gen-go \
-            github.com/twitchtv/twirp/protoc-gen-twirp \
-            github.com/twitchtv/twirp/protoc-gen-twirp_python \
-            github.com/mwitkow/go-proto-validators/protoc-gen-govalidators \
-            github.com/elliots/protoc-gen-twirp_swagger \
-            github.com/thechriswalker/protoc-gen-twirp_js \
-            github.com/rakyll/statik \
-            golang.org/x/tools/cmd/goimports \
-            github.com/xo/usql \
-            github.com/xo/xo
-
-setup: setup_vendor $(TOOLS_DIR) $(PROTOC) setup_tools
-
-# vendor
-setup_vendor:
-	go mod vendor
-
-$(TOOLS_DIR):
-	mkdir -v -p $@
-
-# protoc
-$(PROTOC): $(TOOLS_DIR)/$(PROTOC_ZIP)
-	unzip -o -d "$(TOOLS_DIR)" $< && touch $@  # avoid Prerequisite is newer than target `tools/bin/protoc'.
-
-$(TOOLS_DIR)/$(PROTOC_ZIP):
-	curl --location $(PROTOC_DOWNLOAD) --output $@
-
-# tools
-GO_TOOLS_BIN := $(addprefix $(TOOLS_BIN), $(notdir $(GO_TOOLS)))
-GO_TOOLS_VENDOR := $(addprefix vendor/, $(GO_TOOLS))
-
-setup_tools: $(GO_TOOLS_BIN)
-
-$(GO_TOOLS_BIN): $(GO_TOOLS_VENDOR)
-	GOBIN="$(PWD)/$(TOOLS_BIN)" go install -mod=vendor $(GO_TOOLS)
-
-# clean
-clean_setup:
-	rm -rf "$(TOOLS_DIR)"
-
-clean_vendor:
-	rm -rf vendor
