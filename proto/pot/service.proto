@@ -6,7 +6,7 @@ import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/aspiration-labs/pyggpot/pot_service;pot_service";
+option go_package = "pot_service";
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {
