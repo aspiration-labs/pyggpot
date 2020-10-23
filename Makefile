@@ -49,6 +49,7 @@ swaggerui/rpc/%/service.swagger.json \
             --proto_path=./tools_module/vendor/github.com/grpc-ecosystem/grpc-gateway \
             --twirp_out=./rpc/go \
             --go_out=./rpc/go \
+            --go_opt=paths=source_relative \
             --govalidators_out=./rpc/go \
             --python_out=./rpc/python \
             --twirp_python_out=./rpc/python \
